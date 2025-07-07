@@ -121,3 +121,4 @@ mmseg/.mim
 
 checkpoints/
 *.tar.gz
+iccv09Data/
