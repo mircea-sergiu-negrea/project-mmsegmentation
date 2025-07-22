@@ -21,4 +21,4 @@ def check_only_rgb_structure(directory):
         print("Some folders are missing some .jpg files.")
 
 if __name__ == "__main__":
-    check_only_rgb_structure("/home/negreami/datasets/ap4ad/only_rgb")
+    check_only_rgb_structure("/home/negreami/datasets/ap4ad_local/only_rgb")
