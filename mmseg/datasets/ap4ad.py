@@ -45,9 +45,10 @@ class AP4ADDataset(CustomDataset):
         img_filename = osp.basename(img_path)
         img_name = osp.splitext(img_filename)[0]
         seq = osp.basename(osp.dirname(img_path))
-        action_path = osp.join(self.data_root, self.action_dir, seq, img_name + self.action_suffix)
-        # Change this from 'gt_semantic_seg' to 'action' later
-        results['gt_semantic_seg'] = np.load(action_path)
+        action_path = osp.join(self.data_root, self.action_dir, seq,
+                    img_name + self.action_suffix)
+        # Store action under key 'action' so segmentor receives it as `action`
+        results['action'] = np.load(action_path)
         results = self.pipeline(results)
         return results
 
