@@ -46,7 +46,8 @@ class AP4ADDataset(CustomDataset):
         img_name = osp.splitext(img_filename)[0]
         seq = osp.basename(osp.dirname(img_path))
         action_path = osp.join(self.data_root, self.action_dir, seq, img_name + self.action_suffix)
-        results['action'] = np.load(action_path)
+        # Change this from 'gt_semantic_seg' to 'action' later
+        results['gt_semantic_seg'] = np.load(action_path)
         results = self.pipeline(results)
         return results
 
@@ -56,3 +57,6 @@ class AP4ADDataset(CustomDataset):
         results['img_prefix'] = self.img_dir
         results['flip'] = False
         results['flip_direction'] = None
+
+    #
+    #add eval

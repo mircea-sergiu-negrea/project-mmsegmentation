@@ -1,3 +1,4 @@
+from random import random
 from mmcv import Config
 from mmseg.datasets import build_dataset
 import mmseg.datasets.ap4ad  # Ensure AP4ADDataset is registered
@@ -11,7 +12,8 @@ dataset = build_dataset(cfg.data['train'])
 # Print the length and a sample
 print()
 print(f"Dataset length: {len(dataset)}")
-sample = dataset[0]
+# choose random datapoint to show
+sample = dataset[int(random() * len(dataset))]
 print("Sample keys:", sample.keys())
 print("Image shape:", sample['img'].shape)
 print("Action:", sample['action'])
