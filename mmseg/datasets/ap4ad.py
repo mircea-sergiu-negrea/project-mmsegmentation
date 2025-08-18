@@ -47,7 +47,26 @@ class AP4ADDataset(CustomDataset):
         seq = osp.basename(osp.dirname(img_path))
         action_path = osp.join(self.data_root, self.action_dir, seq,
                     img_name + self.action_suffix)
-        # Store action under key 'action' so segmentor receives it as `action`
+        if not osp.exists(action_path):
+            raise FileNotFoundError(f"Missing action file: {action_path} for image {img_path}")
+        results['action'] = np.load(action_path)
+        results = self.pipeline(results)
+        return results
+
+    def prepare_test_img(self, idx):
+        # Only prepare image and action, no annotation
+        img_info = self.img_infos[idx]
+        results = dict(img_info=img_info)
+        self.pre_pipeline(results)
+
+        img_path = osp.join(self.img_dir, img_info['filename'])
+        img_filename = osp.basename(img_path)
+        img_name = osp.splitext(img_filename)[0]
+        seq = osp.basename(osp.dirname(img_path))
+        action_path = osp.join(self.data_root, self.action_dir, seq,
+                    img_name + self.action_suffix)
+        if not osp.exists(action_path):
+            raise FileNotFoundError(f"Missing action file: {action_path} for image {img_path}")
         results['action'] = np.load(action_path)
         results = self.pipeline(results)
         return results

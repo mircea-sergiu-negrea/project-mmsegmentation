@@ -18,13 +18,6 @@ model = dict(
     test_cfg=dict(mode='whole')
 )
 
-dataset_type = 'AP4ADDataset'
-data_root = '/home/negreami/datasets/ap4ad_local'
-log_level = 'INFO'
-gpu_ids = [1]
-seed = 0
-device = 'cuda'
-
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -38,6 +31,13 @@ train_pipeline = [
     dict(type='ToTensor', keys=['action']),
     dict(type='Collect', keys=['img', 'action'])  # Dataset provides 'action' key
 ]
+
+dataset_type = 'AP4ADDataset'
+data_root = '/home/negreami/datasets/ap4ad_local'
+log_level = 'INFO'
+gpu_ids = [1]
+seed = 0
+device = 'cuda'
 
 data = dict(
     samples_per_gpu=2,
@@ -72,14 +72,14 @@ optimizer = dict(type='Adam', lr=0.001)
 optimizer_config = dict(grad_clip=None)
 
 lr_config = dict(policy='step', step=[10, 20])
-total_epochs = 1
+total_epochs = 2
 
 log_config = dict(
     interval=10,
     hooks=[dict(type='TextLoggerHook')]
 )
 
-checkpoint_config = dict(interval=5)
+checkpoint_config = dict(interval=1)
 
 evaluation = dict(interval=5, metric='mse')
 

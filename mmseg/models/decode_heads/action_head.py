@@ -34,7 +34,7 @@ class ActionHead(BaseModule):
 		else:
 			raise ValueError(f'Unexpected feature tensor shape: {x.shape}')
 		x = F.relu(self.fc1(x))
-		x = F.relu(self.fc2(x))
+		x = self.fc2(x)  # linear activation
 		throttle = torch.sigmoid(self.throttle_out(x))  # (B, 1)
 		steer = torch.tanh(self.steer_out(x))           # (B, 1)
 		return torch.cat([throttle, steer], dim=1)      # (B, 2)
