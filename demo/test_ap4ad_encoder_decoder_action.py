@@ -41,7 +41,7 @@ if img.shape[-1] == 3:
 if img.ndim == 3:
     img = img.unsqueeze(0)
 
-action = sample['gt_semantic_seg']
+action = sample['action']
 if not isinstance(action, torch.Tensor):
     action = torch.from_numpy(action)
 action = action.float()
