@@ -96,3 +96,6 @@ classes = ['action']
 resume_from = None
 auto_resume = False
 load_from = None
+
+# Distributed training parameters (required for multi-GPU)
+dist_params = dict(backend='nccl')
