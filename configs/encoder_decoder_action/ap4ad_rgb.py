@@ -35,7 +35,7 @@ train_pipeline = [
 dataset_type = 'AP4ADDataset'
 data_root = '/home/negreami/datasets/ap4ad_local'
 log_level = 'INFO'
-gpu_ids = [1]
+gpu_ids = [3]  # Which GPU to use
 seed = 0
 device = 'cuda'
 
@@ -68,20 +68,25 @@ data = dict(
     )
 )
 
-optimizer = dict(type='Adam', lr=0.001)
+optimizer = dict(type='Adam', lr=0.0005)
 optimizer_config = dict(grad_clip=None)
 
 lr_config = dict(policy='step', step=[10, 20])
 total_epochs = 2
 
 log_config = dict(
-    interval=10,
-    hooks=[dict(type='TextLoggerHook')]
+        interval=10,
+        hooks=[dict(type='TextLoggerHook'),
+                     dict(type='WandbLoggerHook', by_epoch=False,
+                         init_kwargs={'entity': "orangemsn",
+                                                    'project': "ap4ad",
+                                                    'name': "ap4ad_rgb_test_weight_50"
+                                                })],
 )
 
 checkpoint_config = dict(interval=1)
 
-evaluation = dict(interval=5, metric='mse')
+evaluation = dict(interval=1, metric='mse')
 
 # Runner/workflow and other globals for epoch-based training
 runner = dict(type='EpochBasedRunner', max_epochs=total_epochs)

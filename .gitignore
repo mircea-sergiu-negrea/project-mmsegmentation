@@ -124,3 +124,8 @@ checkpoints/
 iccv09Data/
 demo/demo_videos
 demo/demo_images
+
+# Weights & Biases logs
+wandb/
+
+model.pt
