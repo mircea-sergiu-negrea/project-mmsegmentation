@@ -17,6 +17,11 @@ class ActionHead(BaseModule):
 		- steer: FC(1024, 1) + tanh
 	"""
 
+	def forward_test(self, inputs, img_metas, test_cfg=None):
+		# MMSegmentation expects decode_head.forward_test to exist for test/inference
+		# Just call forward (no augmentation logic needed for regression)
+		return self.forward(inputs)
+
 	def __init__(self, in_channels, hidden_dim1=2048, hidden_dim2=1024, init_cfg=None, weight_throttle_loss=50.0):
 		super().__init__(init_cfg=init_cfg)
 		self.fc1 = nn.Linear(in_channels, hidden_dim1)

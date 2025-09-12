@@ -13,6 +13,33 @@ from .custom import CustomDataset
 @DATASETS.register_module()
 class AP4ADDataset(CustomDataset):
     """AP4AD dataset"""
+    
+    def evaluate(self, results, metric='mse', logger=None, **kwargs):
+        """Evaluate regression results using mean squared error (MSE)."""
+        import numpy as np
+        if isinstance(metric, str):
+            metric = [metric]
+        if 'mse' not in metric:
+            raise KeyError(f"metric {metric} is not supported. Only 'mse' is supported for AP4ADDataset.")
+        # results: list of np.ndarray or torch.Tensor, shape (2,) per sample (throttle, steer)
+        # ground truth: get from self.img_infos and self.action_dir
+        gt_actions = []
+        for idx in range(len(self.img_infos)):
+            img_info = self.img_infos[idx]
+            img_path = osp.join(self.img_dir, img_info['filename'])
+            img_filename = osp.basename(img_path)
+            img_name = osp.splitext(img_filename)[0]
+            seq = osp.basename(osp.dirname(img_path))
+            action_path = osp.join(self.data_root, self.action_dir, seq, img_name + self.action_suffix)
+            gt_action = np.load(action_path)
+            gt_actions.append(gt_action)
+        gt_actions = np.stack(gt_actions)
+        preds = np.array([r if isinstance(r, np.ndarray) else r.cpu().numpy() for r in results])
+        # Ensure shapes match
+        if preds.shape != gt_actions.shape:
+            raise ValueError(f"Prediction shape {preds.shape} does not match ground truth shape {gt_actions.shape}")
+        mse = np.mean((preds - gt_actions) ** 2)
+        return {'mse': mse}
 
     def __init__(self, img_dir, action_dir, img_suffix='.jpg', action_suffix='.npy', pipeline=None, **kwargs):
         super(AP4ADDataset, self).__init__(

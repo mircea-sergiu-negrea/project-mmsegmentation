@@ -69,6 +69,16 @@ class BaseSegmentor(BaseModule, metaclass=ABCMeta):
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch.
         """
+        # Unwrap DataContainer for img_metas if needed (fixes distributed eval error)
+        from mmcv.parallel import DataContainer
+        if isinstance(img_metas, DataContainer):
+            img_metas = img_metas.data
+        if isinstance(imgs, torch.Tensor):
+            imgs = [imgs]
+        # img_metas should be List[List[dict]]; if it's List[dict] (no outer list), wrap it
+        if not isinstance(img_metas, list) or (len(img_metas) > 0 and not isinstance(img_metas[0], list)):
+            img_metas = [img_metas]
+
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError(f'{name} must be a list, but got '
@@ -89,7 +99,12 @@ class BaseSegmentor(BaseModule, metaclass=ABCMeta):
             assert all(shape == pad_shapes[0] for shape in pad_shapes)
 
         if num_augs == 1:
-            return self.simple_test(imgs[0], img_metas[0], **kwargs)
+            # Filter out unexpected kwargs (e.g., 'action')
+            allowed_kwargs = {}
+            for k in ['rescale']:
+                if k in kwargs:
+                    allowed_kwargs[k] = kwargs[k]
+            return self.simple_test(imgs[0], img_metas[0], **allowed_kwargs)
         else:
             return self.aug_test(imgs, img_metas, **kwargs)
 

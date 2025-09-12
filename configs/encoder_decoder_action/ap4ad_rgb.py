@@ -1,22 +1,51 @@
 # Minimal AP4AD config for action regression, only RGB inputs
 
+norm_cfg = dict(type='BN', requires_grad=True)
+
+# Original ResNet-50 v1c backbone config:
 model = dict(
     type='EncoderDecoderAction',
+    pretrained='open-mmlab://resnet50_v1c',
     backbone=dict(
-        type='ResNet',
-        depth=18,
-        in_channels=3,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        type='ResNetV1c',
+        depth=50,
+        num_stages=4,
+        out_indices=(0, 1, 2, 3),
+        dilations=(1, 1, 2, 4),
+        strides=(1, 2, 1, 1),
+        norm_cfg=norm_cfg,
         norm_eval=False,
-        style='pytorch'
+        style='pytorch',
+        contract_dilation=True
     ),
     decode_head=dict(
         type='ActionHead',
-        in_channels=512,  # match backbone output channels
+        in_channels=2048,  # ResNet-50 final output channels
     ),
     train_cfg=None,
     test_cfg=dict(mode='whole')
 )
+
+# Faster ResNet-18 backbone config for debug:
+# model = dict(
+#     type='EncoderDecoderAction',
+#     # switched to a lightweight backbone for fast debug runs
+#     pretrained=None,
+#     backbone=dict(
+#         type='ResNet',
+#         depth=18,
+#         in_channels=3,
+#         norm_cfg=norm_cfg,
+#         norm_eval=False,
+#         style='pytorch'
+#     ),
+#     decode_head=dict(
+#         type='ActionHead',
+#         in_channels=512,  # ResNet-18 final output channels
+#     ),
+#     train_cfg=None,
+#     test_cfg=dict(mode='whole')
+# )
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -35,13 +64,15 @@ train_pipeline = [
 dataset_type = 'AP4ADDataset'
 data_root = '/home/negreami/datasets/ap4ad_local'
 log_level = 'INFO'
-gpu_ids = [3]  # Which GPU to use
+gpu_ids = [3]  # Which GPU to use for train.py (single GPU training)
 seed = 0
 device = 'cuda'
 
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
+    # samples_per_gpu=2,
+    # workers_per_gpu=2,
+    samples_per_gpu=4,  # batch size
+    workers_per_gpu=2,  
     train=dict(
         type=dataset_type,
         data_root=data_root,
@@ -72,15 +103,15 @@ optimizer = dict(type='Adam', lr=0.0005)
 optimizer_config = dict(grad_clip=None)
 
 lr_config = dict(policy='step', step=[10, 20])
-total_epochs = 2
+total_epochs = 20
 
 log_config = dict(
-        interval=10,
+    interval=10,
         hooks=[dict(type='TextLoggerHook'),
                      dict(type='WandbLoggerHook', by_epoch=False,
                          init_kwargs={'entity': "orangemsn",
                                                     'project': "ap4ad",
-                                                    'name': "ap4ad_rgb_test_weight_50"
+                                                    'name': "ap4ad-rgb_resnet-50"
                                                 })],
 )
 
