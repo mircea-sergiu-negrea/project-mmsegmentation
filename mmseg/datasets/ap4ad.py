@@ -41,7 +41,7 @@ class AP4ADDataset(CustomDataset):
         mse = np.mean((preds - gt_actions) ** 2)
         return {'mse': mse}
 
-    def __init__(self, img_dir, action_dir, img_suffix='.jpg', action_suffix='.npy', pipeline=None, **kwargs):
+    def __init__(self, img_dir, action_dir, depth_dir=None, img_suffix='.jpg', action_suffix='.npy', pipeline=None, modalities=['rgb'], **kwargs):
         super(AP4ADDataset, self).__init__(
             img_dir=img_dir,
             img_suffix=img_suffix,
@@ -49,6 +49,8 @@ class AP4ADDataset(CustomDataset):
             **kwargs)
         self.action_dir = action_dir
         self.action_suffix = action_suffix
+        self.depth_dir = depth_dir
+        self.modalities = modalities
 
     def __getitem__(self, idx):
         return super(AP4ADDataset, self).__getitem__(idx)
@@ -62,18 +64,50 @@ class AP4ADDataset(CustomDataset):
         return None
     
     def prepare_train_img(self, idx):
-        # Only prepare image and action, no annotation
+        # Prepare image, depth (optional), and action, no annotation
         img_info = self.img_infos[idx]
         results = dict(img_info=img_info)
         self.pre_pipeline(results)
 
-        # Add action to results before pipeline
         img_path = osp.join(self.img_dir, img_info['filename'])
         img_filename = osp.basename(img_path)
         img_name = osp.splitext(img_filename)[0]
         seq = osp.basename(osp.dirname(img_path))
-        action_path = osp.join(self.data_root, self.action_dir, seq,
-                    img_name + self.action_suffix)
+
+        # Load RGB image
+        if 'rgb' in self.modalities:
+            rgb_img = mmcv.imread(img_path)
+        else:
+            rgb_img = None
+
+        # Load depth if requested
+        if 'depth' in self.modalities:
+            if self.depth_dir is None:
+                raise ValueError('depth_dir must be specified if using depth modality')
+            depth_path = osp.join(self.data_root, self.depth_dir, seq, img_name + '.npy')
+            if not osp.exists(depth_path):
+                raise FileNotFoundError(f"Missing depth file: {depth_path} for image {img_path}")
+            depth = np.load(depth_path)  # shape [H, W, 1]
+        else:
+            depth = None
+
+        # Combine modalities
+        if rgb_img is not None and depth is not None:
+            # Ensure both are HWC, and concatenate along channel axis
+            if rgb_img.ndim == 2:
+                rgb_img = rgb_img[..., None]
+            inputs = np.concatenate([rgb_img, depth], axis=2)
+        elif rgb_img is not None:
+            inputs = rgb_img
+        elif depth is not None:
+            inputs = depth
+        else:
+            raise ValueError('No valid input modalities specified')
+
+        results['img'] = inputs
+
+        # Add action to results before pipeline
+        action_path = osp.join(self.data_root, self.action_dir, seq, img_name + self.action_suffix)
         if not osp.exists(action_path):
             raise FileNotFoundError(f"Missing action file: {action_path} for image {img_path}")
         results['action'] = np.load(action_path)
@@ -81,7 +115,7 @@ class AP4ADDataset(CustomDataset):
         return results
 
     def prepare_test_img(self, idx):
-        # Only prepare image and action, no annotation
+        # Prepare image, depth (optional), and action, no annotation
         img_info = self.img_infos[idx]
         results = dict(img_info=img_info)
         self.pre_pipeline(results)
@@ -90,8 +124,39 @@ class AP4ADDataset(CustomDataset):
         img_filename = osp.basename(img_path)
         img_name = osp.splitext(img_filename)[0]
         seq = osp.basename(osp.dirname(img_path))
-        action_path = osp.join(self.data_root, self.action_dir, seq,
-                    img_name + self.action_suffix)
+
+        # Load RGB image
+        if 'rgb' in self.modalities:
+            rgb_img = mmcv.imread(img_path)
+        else:
+            rgb_img = None
+
+        # Load depth if requested
+        if 'depth' in self.modalities:
+            if self.depth_dir is None:
+                raise ValueError('depth_dir must be specified if using depth modality')
+            depth_path = osp.join(self.data_root, self.depth_dir, seq, img_name + '.npy')
+            if not osp.exists(depth_path):
+                raise FileNotFoundError(f"Missing depth file: {depth_path} for image {img_path}")
+            depth = np.load(depth_path)  # shape [H, W, 1]
+        else:
+            depth = None
+
+        # Combine modalities
+        if rgb_img is not None and depth is not None:
+            if rgb_img.ndim == 2:
+                rgb_img = rgb_img[..., None]
+            inputs = np.concatenate([rgb_img, depth], axis=2)
+        elif rgb_img is not None:
+            inputs = rgb_img
+        elif depth is not None:
+            inputs = depth
+        else:
+            raise ValueError('No valid input modalities specified')
+
+        results['img'] = inputs
+
+        action_path = osp.join(self.data_root, self.action_dir, seq, img_name + self.action_suffix)
         if not osp.exists(action_path):
             raise FileNotFoundError(f"Missing action file: {action_path} for image {img_path}")
         results['action'] = np.load(action_path)
