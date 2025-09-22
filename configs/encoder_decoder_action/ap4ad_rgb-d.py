@@ -98,7 +98,7 @@ data = dict(
     )
 )
 
-optimizer = dict(type='Adam', lr=0.0005)  # set capturable=True to enable checkpointing
+optimizer = dict(type='Adam', lr=0.0005)
 optimizer_config = dict(grad_clip=None)
 
 lr_config = dict(policy='step', step=[10, 20])
@@ -110,7 +110,7 @@ log_config = dict(
                      dict(type='WandbLoggerHook', by_epoch=False,
                          init_kwargs={'entity': "orangemsn",
                                                     'project': "ap4ad",
-                                                    'name': "ap4ad-rgb_resnet-50_10-epochs_no-val"
+                                                    'name': "ap4ad-rgb-d_resnet-50_10-epochs_no-val"
                                                 })],
 )
 

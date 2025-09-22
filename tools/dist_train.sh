@@ -2,7 +2,7 @@ CONFIG=$1
 GPUS=$2
 NNODES=${NNODES:-1}
 NODE_RANK=${NODE_RANK:-0}
-PORT=${PORT:-29500}
+PORT=${PORT:-29500}  # Change from 29500 to 29501 to avoid conflicts when running multiple experiments in parallel
 MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 
 # --- BEGIN MOD: creates subdirectory for each new run ---
@@ -15,9 +15,9 @@ for arg in "${@:3}"; do
     fi
 done
 
-# If --work-dir is not provided, create a timestamped run directory under work_dirs/ap4ad_rgb
+# If --work-dir is not provided, create a timestamped run directory under work_dirs/ap4ad_rgb-d
 if [ "$WORK_DIR_PROVIDED" = false ]; then
-    BASE_WORK_DIR="$(dirname $0)/../work_dirs/ap4ad_rgb"  # Parent directory for all runs
+    BASE_WORK_DIR="$(dirname $0)/../work_dirs/ap4ad_rgb-d"  # CHANGE THIS BASED ON INPUTS USED (RGB vs RGB-D)
     TIMESTAMP=$(date +%Y-%m-%d_%H:%M:%S)  # Format: YYYY-mm-dd_HH:MM:SS
     RUN_DIR="$BASE_WORK_DIR/run_$TIMESTAMP"  # Full path for this run
     mkdir -p "$RUN_DIR"  # Create the run directory

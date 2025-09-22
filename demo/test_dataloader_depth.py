@@ -6,8 +6,8 @@ import numpy as np
 def dataset_smoke_test():
     from mmseg.datasets.ap4ad import AP4ADDataset
 
-    data_root = '/home/negreami/datasets/ap4ad_local/temp_test_for_depth'
-    img_dir = os.path.join(data_root, 'rgb')
+    data_root = '/home/negreami/datasets/ap4ad_local'
+    img_dir = os.path.join(data_root, 'only_rgb')
     action_dir = 'actions'
     depth_dir = 'depth'
 
@@ -20,7 +20,7 @@ def dataset_smoke_test():
         pipeline=[],
     )
 
-    # load up to 3 samples and print concise diagnostics
+    # load 3 samples
     n = min(3, len(dataset))
     if n == 0:
         print('Dataset is empty')
