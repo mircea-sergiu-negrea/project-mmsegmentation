@@ -110,7 +110,7 @@ log_config = dict(
                      dict(type='WandbLoggerHook', by_epoch=False,
                          init_kwargs={'entity': "orangemsn",
                                                     'project': "ap4ad",
-                                                    'name': "ap4ad-rgb_resnet-50_10-epochs_no-val"
+                                                    'name': "ap4ad-rgb_resnet50_debug"
                                                 })],
 )
 

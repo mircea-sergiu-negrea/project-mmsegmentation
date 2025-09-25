@@ -2,59 +2,66 @@
 
 norm_cfg = dict(type='BN', requires_grad=True)
 
-# Original ResNet-50 v1c backbone config:
-model = dict(
-    type='EncoderDecoderAction',
-    pretrained='open-mmlab://resnet50_v1c',
-    backbone=dict(
-        type='ResNetV1c',
-        depth=50,
-        num_stages=4,
-        out_indices=(0, 1, 2, 3),
-        dilations=(1, 1, 2, 4),
-        strides=(1, 2, 1, 1),
-        norm_cfg=norm_cfg,
-        norm_eval=False,
-        style='pytorch',
-        contract_dilation=True
-    ),
-    decode_head=dict(
-        type='ActionHead',
-        in_channels=2048,  # ResNet-50 final output channels
-    ),
-    train_cfg=None,
-    test_cfg=dict(mode='whole')
-)
-
-# Faster ResNet-18 backbone config for debug:
+# Original ResNet-50 v1c backbone config (disabled for faster debug):
 # model = dict(
 #     type='EncoderDecoderAction',
-#     # switched to a lightweight backbone for fast debug runs
-#     pretrained=None,
+#     pretrained='open-mmlab://resnet50_v1c',
 #     backbone=dict(
-#         type='ResNet',
-#         depth=18,
-#         in_channels=3,
+#         type='ResNetV1c',
+#         depth=50,
+#         in_channels=4,
+#         num_stages=4,
+#         out_indices=(0, 1, 2, 3),
+#         dilations=(1, 1, 2, 4),
+#         strides=(1, 2, 1, 1),
 #         norm_cfg=norm_cfg,
 #         norm_eval=False,
-#         style='pytorch'
+#         style='pytorch',
+#         contract_dilation=True
 #     ),
 #     decode_head=dict(
 #         type='ActionHead',
-#         in_channels=512,  # ResNet-18 final output channels
+#         in_channels=2048,  # ResNet-50 final output channels
 #     ),
 #     train_cfg=None,
 #     test_cfg=dict(mode='whole')
 # )
 
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+# Faster ResNet-18 backbone config for debug:
+model = dict(
+    type='EncoderDecoderAction',
+    # switched to a lightweight backbone for fast debug runs
+    pretrained=None,
+    backbone=dict(
+        type='ResNet',
+        depth=18,
+        in_channels=4,  # RGBD temporary merge -> 4 channels
+        norm_cfg=norm_cfg,
+        norm_eval=False,
+        style='pytorch'
+    ),
+    decode_head=dict(
+        type='ActionHead',
+        in_channels=512,  # ResNet-18 final output channels
+    ),
+    train_cfg=None,
+    test_cfg=dict(mode='whole')
+)
+
+
+# Normalization configs per modality
+rgb_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+depth_norm_cfg = dict(mean=[0.334576027037], std=[0.370892853092], to_rgb=False)  # was already normalized
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    # dict(type='LoadActionsGT'),  # Custom transform to load actions from .npy
+    dict(type='LoadDepthFromFile'),
     dict(type='RandomFlip', prob=0.0),  # Explicitly do nothing, but set 'flip' key
-    dict(type='Normalize', mean=img_norm_cfg['mean'], std=img_norm_cfg['std'], to_rgb=img_norm_cfg.get('to_rgb', True)),
+    # Normalize each modality separately
+    dict(type='NormalizeByKey', key='img', mean=rgb_norm_cfg['mean'], std=rgb_norm_cfg['std'], to_rgb=rgb_norm_cfg['to_rgb']),
+    dict(type='NormalizeByKey', key='depth', mean=depth_norm_cfg['mean'], std=depth_norm_cfg['std'], to_rgb=depth_norm_cfg['to_rgb']),
+    # Concatenate into a 4-channel tensor for the backbone
+    dict(type='ConcatModalities', keys=['img', 'depth'], out_key='img'),
     # convert image and action to tensors (image: HWC->CHW)
     dict(type='ImageToTensor', keys=['img']),
     dict(type='ToTensor', keys=['action']),
@@ -62,7 +69,7 @@ train_pipeline = [
 ]
 
 dataset_type = 'AP4ADDataset'
-data_root = '/home/negreami/datasets/ap4ad_local'
+data_root = '/home/negreami/datasets/ap4ad_local'  # Change to ap4ad_local for actual runs, or ap4ad_local/test_dataset for debug
 log_level = 'INFO'
 gpu_ids = [3]  # Which GPU to use for train.py (single GPU training)
 seed = 0
@@ -77,6 +84,7 @@ data = dict(
         data_root=data_root,
         img_dir='only_rgb',  # AP4AD image folder
         action_dir='actions',  # AP4AD actions folder
+        depth_dir='depth',  # enable depth loader via dataset pre_pipeline
     pipeline=train_pipeline,
     classes=['action'],
     ),
@@ -85,6 +93,7 @@ data = dict(
         data_root=data_root,
         img_dir='only_rgb',
         action_dir='actions',
+        depth_dir='depth',
     pipeline=train_pipeline,
     classes=['action'],
     ),
@@ -93,6 +102,7 @@ data = dict(
         data_root=data_root,
         img_dir='only_rgb',
         action_dir='actions',
+        depth_dir='depth',
     pipeline=train_pipeline,
     classes=['action'],
     )
@@ -102,7 +112,7 @@ optimizer = dict(type='Adam', lr=0.0005)
 optimizer_config = dict(grad_clip=None)
 
 lr_config = dict(policy='step', step=[10, 20])
-total_epochs = 10
+total_epochs = 4
 
 log_config = dict(
     interval=10,
@@ -110,7 +120,7 @@ log_config = dict(
                      dict(type='WandbLoggerHook', by_epoch=False,
                          init_kwargs={'entity': "orangemsn",
                                                     'project': "ap4ad",
-                                                    'name': "ap4ad-rgb-d_resnet-50_10-epochs_no-val"
+                                                    'name': "ap4ad-rgb-d_resnet18_debug"
                                                 })],
 )
 
